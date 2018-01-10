@@ -18,7 +18,8 @@
   // - ...
   //
   // Versions
-  // 1.0 - 4.01.2018 First draft
+  // 1.0 - 04.01.2018 First draft
+  // 1.1 - 10.01.2018 Bugfixes mail sending
 
   ini_set('display_errors', 1);
   error_reporting(E_ALL ^ E_NOTICE);
@@ -313,7 +314,7 @@
         }
         //Set the subject line
         $mail->Subject = "SGS Flugmeldung vom " . $datum;
-        $mail->Body = "Anbei die " . $subject . "\n\n";
+        $mail->Body = "Anbei die " . $mail->Subject  . "\n\n";
         //Replace the plain text body with one created manually
         $mail->AltBody = 'This is a plain-text message body';
         //Attach an image file
@@ -326,6 +327,7 @@
         } else
         {
           echo "Mail sent<br />";
+          unlink($filename);
         }    
         
       } else
