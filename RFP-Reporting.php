@@ -20,8 +20,9 @@
   // Versions
   // 1.0 - 04.01.2018 First draft
   // 1.1 - 10.01.2018 Bugfixes mail sending
+  // 1.2 - 11.01.2018 Implement timezone support
 
-  ini_set('display_errors', 1);
+  ini_set("display_errors", 1);
   error_reporting(E_ALL ^ E_NOTICE);
 
   $CONFIG_FILE = "RFP.cfg.php";
@@ -42,27 +43,28 @@
   );
   $Flights = array();
 
-  require_once('VereinsfliegerRestInterface.php');
+  require_once("VereinsfliegerRestInterface.php");
   
   // Require autoload from composer. Use composer to install PHPSpreadsheet and PHPMailer
-  require 'vendor/autoload.php';
+  require "vendor/autoload.php";
   use PhpOffice\PhpSpreadsheet\Spreadsheet;
   use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
   use PHPMailer\PHPMailer\PHPMailer;
   
   $configuration = parse_ini_file ($CONFIG_FILE, 1);
-  $club_gliders = explode (",",$configuration['club']['gliders']);
-  $club_airport = $configuration['club']['airport'];
-  $club_filename_suffix = $configuration['club']['filename_suffix'];
-  $club_towplanes = explode (",",$configuration['club']['towplanes']);
-  $flighttype_pax = $configuration['club']['flighttype_pax'];
-  $flighttypes_training = explode (",",$configuration['club']['flighttypes_training']);
-  $mode = $configuration['modus']['mode'];
+  $club_gliders = explode (",",$configuration["club"]["gliders"]);
+  $club_airport = $configuration["club"]["airport"];
+  $club_timezone = $configuration["club"]["timezone"];
+  $club_filename_suffix = $configuration["club"]["filename_suffix"];
+  $club_towplanes = explode (",",$configuration["club"]["towplanes"]);
+  $flighttype_pax = $configuration["club"]["flighttype_pax"];
+  $flighttypes_training = explode (",",$configuration["club"]["flighttypes_training"]);
+  $mode = $configuration["modus"]["mode"];
   	
   date_default_timezone_set ( "UTC");
   $a = new VereinsfliegerRestInterface();
       
-  $result = $a->SignIn($configuration['vereinsflieger']['login_name'],$configuration['vereinsflieger']['password'],0);
+  $result = $a->SignIn($configuration["vereinsflieger"]["login_name"],$configuration["vereinsflieger"]["password"],0);
 
   if ($result) {
       if ($mode=="lastmonth")
@@ -70,7 +72,7 @@
         // get number of days in month
         $firstdayint = strtotime("first day of previous month");
         $dateArray = getdate($firstdayint);
-        $max = cal_days_in_month(CAL_GREGORIAN, $dateArray['mon'], $dateArray['mday']);
+        $max = cal_days_in_month(CAL_GREGORIAN, $dateArray["mon"], $dateArray["mday"]);
         echo "Mode: flights from last month. Max days in last month: $max<br />";
       } else // mode: daily
       {
@@ -94,7 +96,7 @@
         } else // mode: daily
         {
           $daydate = new DateTime();
-          // $daydate = new DateTime("2017-07-08"); //use for testing
+          //$daydate = new DateTime("2017-07-08"); //use for testing
           $datum = date_format($daydate, "Y-m-d");
           $return = $a->GetFlights_date ($datum);
         }
@@ -126,8 +128,9 @@
                 $Flights[$counter] = $aBBentry;
                 $Flights[$counter]["date"] = date_format($daydate, "d.m.Y");;
                 $Flights[$counter]["towplane_callsign"] = $aResponse[$i]["callsign"];
-                $Flights[$counter]["towplane_starttime"] = substr($aResponse[$i]["departuretime"], 0, 5);
-                $Flights[$counter]["towplane_arrivaltime"] = substr($aResponse[$i]["arrivaltime"], 0, 5);
+                // Convert timestamps to UTC and remove seconds (format from Vereinsflieger is hh:mm:ss)
+                $Flights[$counter]["towplane_starttime"] = timestring_to_utc($aResponse[$i]["departuretime"], $daydate, $club_timezone)->format("H:i");
+                $Flights[$counter]["towplane_arrivaltime"] = timestring_to_utc($aResponse[$i]["arrivaltime"], $daydate, $club_timezone)->format("H:i");
                 if (in_array($aResponse[$i]["callsign"], $club_towplanes) )
                 {
                   $Flights[$counter]["towplane_callsign"] = $aResponse[$i]["callsign"];
@@ -143,10 +146,10 @@
                   if ($aResponse[$j]["flid"] == $aResponse[$i]["flidtow"])
                   {
                     $Flights[$counter]["glider_callsign"] = $aResponse[$j]["callsign"];
-                    $Flights[$counter]["glider_starttime"] = substr($aResponse[$j]["departuretime"], 0, 5);
+                    $Flights[$counter]["glider_starttime"] = timestring_to_utc($aResponse[$j]["departuretime"], $daydate, $club_timezone)->format("H:i");
                     if ($aResponse[$j]["arrivallocation"] == $club_airport)
                     {
-                      $Flights[$counter]["glider_arrivaltime"] = substr($aResponse[$j]["arrivaltime"], 0, 5);
+                      $Flights[$counter]["glider_arrivaltime"] = timestring_to_utc($aResponse[$j]["arrivaltime"], $daydate, $club_timezone)->format("H:i");
                     } else
                     {
 
@@ -244,12 +247,12 @@
         $sheet->getStyle("A1:L1")->getFill()->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID);
         foreach(range("A","K") as $col)
         {
-          $sheet->getColumnDimension($col)->setWidth(12);
+          $sheet->getColumnDimension($col)->setWidth(15);
         }
         $sheet->getColumnDimension("L")->setWidth(25);
         
         //Fill in data, first header row
-        $headers = array("Datum", "SF", "SFStart", "SFLandung", "SP", "SPStart", "SPLandung", "Schulung", "Gruppe", "Privat", "Pax", "Bemerkungen");
+        $headers = array("Datum", "SF", "SFStart (UTC)", "SFLandung (UTC)", "SP", "SPStart (UTC)", "SPLandung (UTC)", "Schulung", "Gruppe", "Privat", "Pax", "Bemerkungen");
         $sheet->fromArray($headers, NULL, "A1");
         
         // Then flight data
@@ -342,11 +345,30 @@
     }
 
     
-    
+  // Custom comparision function for sorting
   function compare_flights($a, $b)
   {
     return strcmp($a["towplane_starttime"], $b["towplane_starttime"]);
   }
 
+  // Converts a string containing a time (hh:mm:ss) and a date object to a UTC datetime object
+  function timestring_to_utc($timestring, $date, $timezone)
+  {
+    // Create date object
+    $timestamp_lcl = new DateTime($date->format("Ymd") . "T" . $timestring, new DateTimeZone($timezone));
+       
+    // Convert to UTC
+    $timestamp_utc = $timestamp_lcl->setTimezone(new DateTimeZone("UTC"));
+    
+    // Create string and return
+    if ($timestamp_utc != FALSE)
+    {
+      return $timestamp_utc;
+    } else
+    {
+      return -1;
+    }
+  }
+  
   
 ?>

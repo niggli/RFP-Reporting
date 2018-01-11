@@ -10,10 +10,12 @@ login_name = "name"
 password = "password"
 
 ;
-; Vereins-spezifische Einstellungen. Kennzeichen in Listen mit Kommata trennen.
+; Vereins-spezifische Einstellungen. Kennzeichen in Listen mit Kommata trennen. Zeitzone muss hier http://php.net/manual/en/timezones.php
+; vorkommen
 ;
 [club]
 airport = "Airport"
+timezone = "Europe/Zurich"
 towplanes = "HB-ABC,HB-DEF,HB-GHI"
 gliders = "HB-1111,HB-2222,HB-3333"
 flighttype_pax = "4"
