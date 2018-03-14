@@ -39,7 +39,8 @@ smtp_login = "name@gmail.com"
 smtp_passwd = "password"
 from_address = "name@gmail.com"
 from_name = "RFP-Reporting"
-receivers = "name@domain.com"
+receivers = "name@domain.com: Name One"
+admin = "admin@domain.com:Admin Guy"
 
 ;*/
 
