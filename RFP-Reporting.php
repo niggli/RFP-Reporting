@@ -22,6 +22,7 @@
   // 1.2 - 11.01.2018 Implement timezone support
   // 1.3 - 13.03.2018 Add possibility of specific date. Inform admin when error occurs.
   // 1.4 - 19.04.2018 Compare strings more strictly. Report selflaunches also. New excludelist.
+  // 1.5 - 12.07.2018 Don't report motor flights with towplane.
 
   ini_set("display_errors", 1);
   error_reporting(E_ALL ^ E_NOTICE);
@@ -224,49 +225,54 @@
 
               } else
               {
-                echo "Relevant selflaunch found<br />";
-                
-                // Fill data of flight in Flights array
-                $Flights[$counter] = $aBBentry;
-                $Flights[$counter]["date"] = date_format($daydate, "d.m.Y");
-                $Flights[$counter]["glider_callsign"] = $aResponse[$i]["callsign"];
-                $Flights[$counter]["glider_starttime"] = timestring_to_utc($aResponse[$i]["departuretime"], $daydate, $club_timezone)->format("H:i");
-                $Flights[$counter]["glider_arrivaltime"] = timestring_to_utc($aResponse[$i]["arrivaltime"], $daydate, $club_timezone)->format("H:i");
-                $Flights[$counter]["remarks"] = "Eigenstart";
-                
-                if (in_array($aResponse[$i]["ftid"], $flighttypes_training) )
+                if (in_array($aResponse[$i]["callsign"], $club_towplanes) )
                 {
-                  $Flights[$counter]["training"] = "x";
-                } else
-                {
-                  $Flights[$counter]["training"] = "";
+                  echo "No relevant selflaunch, normal motor flight by towplane<br />";
                 }
-                if (in_array($aResponse[$i]["callsign"], $club_gliders) )
+                else
                 {
-                  $Flights[$counter]["group"] = "x";
-                  $Flights[$counter]["private"] = "";
-                } else
-                {
-                  $Flights[$counter]["group"] = "";
-                  $Flights[$counter]["private"] = "x";
-                }
-                if ($aResponse[$i]["ftid"] === $flighttype_pax)
-                {
-                  $Flights[$counter]["pax"] = 1;
-                  // Pax flights with club gliders count as training
-                  if (in_array($aResponse[$i]["callsign"], $club_gliders) )
+                
+                  echo "Relevant selflaunch found<br />";
+                  
+                  // Fill data of flight in Flights array
+                  $Flights[$counter] = $aBBentry;
+                  $Flights[$counter]["date"] = date_format($daydate, "d.m.Y");
+                  $Flights[$counter]["glider_callsign"] = $aResponse[$i]["callsign"];
+                  $Flights[$counter]["glider_starttime"] = timestring_to_utc($aResponse[$i]["departuretime"], $daydate, $club_timezone)->format("H:i");
+                  $Flights[$counter]["glider_arrivaltime"] = timestring_to_utc($aResponse[$i]["arrivaltime"], $daydate, $club_timezone)->format("H:i");
+                  $Flights[$counter]["remarks"] = "Eigenstart";
+                  
+                  if (in_array($aResponse[$i]["ftid"], $flighttypes_training) )
                   {
                     $Flights[$counter]["training"] = "x";
+                  } else
+                  {
+                    $Flights[$counter]["training"] = "";
                   }
-                } else
-                {
-                  $Flights[$counter]["pax"] = 0;
-                }
-                
-              }
-              
-
-                
+                  if (in_array($aResponse[$i]["callsign"], $club_gliders) )
+                  {
+                    $Flights[$counter]["group"] = "x";
+                    $Flights[$counter]["private"] = "";
+                  } else
+                  {
+                    $Flights[$counter]["group"] = "";
+                    $Flights[$counter]["private"] = "x";
+                  }
+                  if ($aResponse[$i]["ftid"] === $flighttype_pax)
+                  {
+                    $Flights[$counter]["pax"] = 1;
+                    // Pax flights with club gliders count as training
+                    if (in_array($aResponse[$i]["callsign"], $club_gliders) )
+                    {
+                      $Flights[$counter]["training"] = "x";
+                    }
+                  } else
+                  {
+                    $Flights[$counter]["pax"] = 0;
+                  }
+                } //else (relevant case)
+              } //else (selflaunch case)
+   
               $counter++;
             } else
             {
