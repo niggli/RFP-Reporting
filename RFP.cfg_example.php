@@ -1,7 +1,7 @@
 ;<?php
 ;die();
 ;/*
-; Konfiguration für CAMO Reporting aus vereinsflieger.de
+; Konfiguration für RFP Reporting aus vereinsflieger.de
 
 ; Hier Login und Passwort für das Einloggen in Vereinsflieger.de angeben
 ;
@@ -24,7 +24,7 @@ flighttypes_training = "2,8,11,12,13,14,17,18"
 filename_suffix = "-airport-landings.xls"
 
 ;
-; Programm-Modus: "daily" schickt die Fluege vom heutigen Tag an die CAMO, "lastmonth" die Fluege des letzten Monats.
+; Programm-Modus: "daily" schickt die Fluege vom heutigen Tag an den RFP, "lastmonth" die Fluege des letzten Monats.
 ;
 [modus]
 mode = "daily"
