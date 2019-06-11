@@ -23,6 +23,7 @@
   // 1.3 - 13.03.2018 Add possibility of specific date. Inform admin when error occurs.
   // 1.4 - 19.04.2018 Compare strings more strictly. Report selflaunches also. New excludelist.
   // 1.5 - 12.07.2018 Don't report motor flights with towplane.
+  // 1.6 - 11.06.2019 Add "appkey" for vereinsflieger signin
 
   ini_set("display_errors", 1);
   error_reporting(E_ALL ^ E_NOTICE);
@@ -69,7 +70,7 @@
   
   $error_string = "";
       
-  $result = $a->SignIn($configuration["vereinsflieger"]["login_name"],$configuration["vereinsflieger"]["password"],0);
+  $result = $a->SignIn($configuration["vereinsflieger"]["login_name"], $configuration["vereinsflieger"]["password"], 0, $configuration["vereinsflieger"]["appkey"]);
 
   if ($result)
   {

@@ -8,6 +8,8 @@
 [vereinsflieger]
 login_name = "name"
 password = "password"
+appkey = "83458923759823489234"
+
 
 ;
 ; Vereins-spezifische Einstellungen. Kennzeichen in Listen mit Kommata trennen. Zeitzone muss hier http://php.net/manual/en/timezones.php
